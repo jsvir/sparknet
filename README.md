@@ -55,7 +55,21 @@ he accuracy of the proposed model as a function of number of parameters. The sma
 This markdown table retains the structure and formatting of your original LaTeX table, with columns for model version, parameters, MACs, and accuracy (SC1 and SC2).
 
 
-# Acknowledgments
+## Acknowledgments
 This project builds upon the work and tools provided by the open-source community. Special thanks to:
  * [NeMo](https://github.com/NVIDIA/NeMo) 
  * [THOP](https://github.com/Lyken17/pytorch-OpCounter/)
+
+
+
+## Cite this work:
+
+```
+@inproceedings{svirsky2024sparse,
+  title={Sparse Binarization for Fast Keyword Spotting},
+  author={Svirsky, Jonathan and Shaham, Uri and Lindenbaum, Ofir},
+  booktitle={Proc. Interspeech 2024},
+  pages={3010--3014},
+  year={2024}
+}
+```
