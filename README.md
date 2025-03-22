@@ -9,7 +9,14 @@ The paper is [here](https://www.isca-archive.org/interspeech_2024/svirsky24_inte
 * **Appropriate for micro-controllers** 
 
 
-The code will be released soon.
+## Updates: (23/03/2025)
+* The code is released (training and inference)
+  * The model is tested in Python 3.10.7
+  * Install the requirements: `pip install -r requirements.txt`
+  * Please notice, that the version of NeMo we use is different with our modifications, especially in file `nemo/collections/asr/models/classification_models.py`
+* We release the checkpoints for configurations `C=4,8,16,32` trained on Google Speech Commands v2 on 12 labels
+* Test example: put your recordings in `wavs` directory and run the command: 
+  * `python inference.py --model_path ckpt/kws_C_16.ckpt`
 
 
 ### Model:
@@ -47,3 +54,8 @@ he accuracy of the proposed model as a function of number of parameters. The sma
 
 This markdown table retains the structure and formatting of your original LaTeX table, with columns for model version, parameters, MACs, and accuracy (SC1 and SC2).
 
+
+# Acknowledgments
+This project builds upon the work and tools provided by the open-source community. Special thanks to:
+ * [NeMo](https://github.com/NVIDIA/NeMo) 
+ * [THOP](https://github.com/Lyken17/pytorch-OpCounter/)

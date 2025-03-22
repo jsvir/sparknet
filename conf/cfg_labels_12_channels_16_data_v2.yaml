@@ -1,0 +1,169 @@
+name: &name "KWS"
+
+channels: &channels 16
+
+model:
+  sample_rate: 16000
+  timesteps: 101
+  repeat: 1
+  dropout: 0
+  kernel_size_factor: 1.0
+
+  labels: [
+    "yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go",
+    "_unknown_", "_silence_"
+  ]
+
+  train_ds:
+    manifest_filepath: /path/to/train_manifest_balanced.json
+    sample_rate: ${model.sample_rate}
+    labels: ${model.labels}
+    batch_size: 128
+    num_workers: 0
+    shuffle: True
+    # tarred datasets
+    is_tarred: false
+    tarred_audio_filepaths: null
+    shuffle_n: 2048
+    # bucketing params
+    bucketing_strategy: "synced_randomized"
+    bucketing_batch_size: null
+    augmentor:
+      shift:
+        prob: 0.8
+        min_shift_ms: -100.0
+        max_shift_ms: 100.0
+      white_noise:
+        prob: 0.8
+        min_level: -90
+        max_level: -46
+
+  validation_ds:
+    manifest_filepath: /path/to/valid_manifest_balanced.json
+
+    sample_rate: ${model.sample_rate}
+    num_workers: 0
+    labels: ${model.labels}
+    batch_size: 128
+    shuffle: False
+    val_loss_idx: 0
+
+  test_ds:
+    manifest_filepath: /path/to/test_manifest_balanced.json
+    sample_rate: ${model.sample_rate}
+    num_workers: 0
+    labels: ${model.labels}
+    batch_size: 128
+    shuffle: False
+    val_loss_idx: 0
+
+  preprocessor:
+    _target_: nemo.collections.asr.modules.AudioToMFCCPreprocessor
+    window_size: 0.025
+    window_stride: 0.01
+    window: "hann"
+    n_mels: &n_mels 32
+    n_mfcc: *n_mels
+    n_fft: 512
+
+  crop_or_pad_augment:
+    _target_: nemo.collections.asr.modules.CropOrPadSpectrogramAugmentation
+    audio_length: ${model.timesteps}
+
+  reg_lamba: 1
+  feature_selector:
+    _target_: nemo.collections.asr.modules.ConvASREncoder
+    feat_in: *n_mels
+    activation: relu
+    conv_mask: false
+
+    jasper:
+      - filters: *channels
+        repeat: 1
+        kernel: [11]
+        stride: [1]
+        dilation: [1]
+        dropout: ${model.dropout}
+        residual: false
+        separable: true
+        kernel_size_factor: ${model.kernel_size_factor}
+
+      - filters: *channels
+        repeat: 1
+        kernel: [ 15 ]
+        stride: [ 1 ]
+        dilation: [ 1 ]
+        dropout: ${model.dropout}
+        residual: true
+        separable: true
+        kernel_size_factor: ${model.kernel_size_factor}
+
+      - filters: *channels
+        repeat: 1
+        kernel: [19]
+        stride: [1]
+        dilation: [1]
+        dropout: ${model.dropout}
+        residual: true
+        separable: true
+        kernel_size_factor: ${model.kernel_size_factor}
+
+      - filters: *channels
+        repeat: 1
+        kernel: [29]
+        stride: [1]
+        dilation: [1]
+        dropout: ${model.dropout}
+        residual: true
+        separable: true
+        kernel_size_factor: ${model.kernel_size_factor}
+
+  optim:
+    name: sgd
+    lr: 0.01
+    weight_decay: 0.001
+    momentum: 0.9
+
+    # scheduler setup
+    sched:
+      name: PolynomialHoldDecayAnnealing
+      # Scheduler params
+      power: 2.0
+      warmup_ratio: 0.05
+      hold_ratio: 0.4
+      min_lr: 1e-6
+      last_epoch: -1
+
+trainer:
+  devices: 1 # number of gpus
+  max_epochs: 200
+  max_steps: null # computed at runtime if not set
+  num_nodes: 1
+  accelerator: gpu
+  strategy: ddp
+  accumulate_grad_batches: 1
+  enable_checkpointing: False  # Provided by exp_manager
+  logger: False  # Provided by exp_manager
+  log_every_n_steps: 100  # Interval of logging.
+  val_check_interval: 1.0  # Set to 0.25 to check 4 times per epoch, or an int for number of iterations
+
+exp_manager:
+  exp_dir: null
+  name: *name
+  create_tensorboard_logger: True
+  create_checkpoint_callback: True
+  checkpoint_callback_params:
+    monitor: "val_loss_gates"
+    mode: "min"
+  create_wandb_logger: False
+  wandb_logger_kwargs:
+    name: null
+    project: null
+  version: null
+
+hydra:
+  run:
+    dir: .
+  job_logging:
+    root:
+      handlers: null
